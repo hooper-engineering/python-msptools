@@ -24,7 +24,7 @@ Frame formatting and checksumming is handled automatically, freeing the develope
 
 Because this module uses the Python C API, it has the opportunity to "let go" of the Python interpreter, specifically the Python Global Interpreter Lock (GIL) during slow serial port operations.
 
-If desired, this allows all serial communication to occur outside of the one-thing-at-a-time execution of pure Python programs. ([It's true! Multi-threaded pure-Python programs generally do not run threads concurrently!](https://docs.python.org/3/c-api/init.html#thread-state-and-the-global-interpreter-lock))
+If desired, this allows all serial communication to occur outside of the one-thing-at-a-time execution of pure Python programs. ([Multi-threaded pure-Python programs generally do not run threads concurrently!](https://docs.python.org/3/c-api/init.html#thread-state-and-the-global-interpreter-lock))
 
 In this way, using msplink inside of a 'comms' thread while doing other processing in a 'processing' thread allows the processing thread to continue running while the comms thread blocks during serial access.
 
@@ -58,7 +58,7 @@ Ensure that Python 3 is installed using your system. Python 3.3 may work, but Py
 
 Clone the repo into a directory of your choice:
 
-```
+```bash
 cd ~
 mkdir my_checkout
 cd my_checkout
@@ -68,7 +68,7 @@ cd python-msptools/msplink
 
 Build and install the msplink package:
 
-```
+```bash
 sudo python3 setup.py install
 ```
 
@@ -78,7 +78,7 @@ This should build and install the package automatically.
 
 First, import msplink:
 
-```
+```python
 import msplink
 ```
 
@@ -97,12 +97,12 @@ Once the package is imported, you can call `msplink.open()` to initiate a connec
  
 Note that the `serial_device` parameter is *positional* so it must occur first if it is not named, but the parameter name is optional:
 
-```
+```python
 msplink.open("/dev/ttyACM0")                 # Open a new MSP connection
 ```
 or
 
-```
+```python
 msplink.open("/dev/ttyACM0", msp_version=2)  # Open a new MSP V2 connection
 ```
 
@@ -121,14 +121,14 @@ If the `open()` completed successfully, you are now free to use `get()`, `set()`
 
 ### msplink.get()
 
-get() parameter | Required | Default value | Description | Example
+`get()` parameter | Required | Default value | Description | Example
 ----------------|----------|---------------|-------------|---------
 `command`       | Yes      | *no default*   | A command number | `108` (get attitude)
 `flag`          | No       | `0` or `None` | Optional flag (V2 only) | *Reserved for future use*
 
 As with `open()`, there is a positional, required parameter and optional named parameters:
 
-```
+```python
 result = msplink.get(108)                   # Get UAV attitude
 print(result)                               # Print received packet
 print(struct.unpack("<3h",result.payload))  # Print attitude (X,Y,Bearing)
@@ -136,7 +136,7 @@ print(struct.unpack("<3h",result.payload))  # Print attitude (X,Y,Bearing)
 
 or
 
-```
+```python
 # Note: There's currently no reason to use the flag parameter,
 #       but this is how you use it
 
@@ -171,7 +171,7 @@ Note that `msplink.NoResponse`, `msplink.BadChecksum`, and `msplink.NACK` all in
 
 ### msplink.set()
 
-set() parameter | Required | Default value | Description | Example
+`set()` parameter | Required | Default value | Description | Example
 ----------------|----------|---------------|-------------|---------
 `command`       | Yes      | *no default*   | A command number | `108` (get attitude)
 `payload`       | Yes      | *no default*   | Parameter data, a Python *bytes* object | *See examples*
@@ -180,7 +180,7 @@ set() parameter | Required | Default value | Description | Example
 
 For `set()`, both `command` and `payload` are required fields, and they are positional in that order:
 
-```
+```python
 # Send sticks neutral (as four little-endian unsigned short ints)
 raw_rc_values = struct.pack('<4H', 1500, 1500, 1500, 1500)
 msplink.set(200, raw_rc_values)  # SET_RAW_RC
@@ -204,13 +204,13 @@ If `set()` is not successful, it can throw
 
 Link prolems can be caught as `msplink.CommError` exceptions, just as with `get()`. Note that the `msplink.CommError` exceptions are only thrown when `wait_for_ack=True`.
 
-#### A note about `wait_for_ack=False`:
+#### Use caution with `wait_for_ack=False`
 
-This is provided as a mechanism for saving blocking time when you need to quickly send data to the MSP responder and return. It can cause problems when rapidly sending these commands if the responder you are talking to uses a shared TX/RX buffer, or otherwise is incapable of receiving data before the previous ACK packet is sent.
+`wait_for_ack=False` is provided as a mechanism for saving blocking time when you need to quickly send data to the MSP responder and return. It can cause problems when rapidly sending these commands if the responder you are talking to uses a shared TX/RX buffer, or otherwise is incapable of receiving data before the previous ACK packet is sent.
 
 This is extra dicey because if you send a series of `set(...,wait_for_ack=False)` commands, you will not be able to tell when or whether they have failed.
 
-In summary, *don't use it unless you need it and still don't use it unless you understand these caveats.*
+In summary, *don't use it unless you need it and even then don't use it unless you understand these issues.*
 
 ### msplink.close()
 
@@ -252,7 +252,7 @@ Note that `msplink.NACK` and `msplink.BadChecksum` return `MspPacketType` object
 
 A program to repeatedly read responder UAV attitude:
 
-```
+```python
 #!/usr/bin/env python3
 # encoding: utf-8
 
