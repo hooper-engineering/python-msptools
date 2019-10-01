@@ -66,9 +66,8 @@ uint8_t checksum_crc8_dvb_s2(const void * data, size_t size, uint8_t crc) {
 uint8_t checksum_xor(const void * data, size_t size, uint8_t checksum)
 {
     uint8_t *pos = (uint8_t *) data;
+    uint8_t *end = pos + size;
 
-    for (size_t i=0; i<size; i++)
-        checksum ^= *(pos++);
-
+    while (pos < end) checksum ^= *(pos++);
     return checksum;
 }
