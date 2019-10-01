@@ -27,13 +27,14 @@ along with python-msptools.  If not, see <https://www.gnu.org/licenses/>.
 /**
  *  MSP V1 packet sender
  *
- *  @param mdev     [in]    an MSP device pointer
- *  @param cmd      [in]    an MSP command number
- *  @param payload  [in]    the command payload data
+ *  @param mdev        [in]    an MSP device pointer
+ *  @param cmd         [in]    an MSP command number
+ *  @param payload     [in]    the command payload data
  *  @param payload_len [in] lenght of the command payload data
  *
- *  Generates an MSP V1 packet with the given parameter data. If the given
- *  payload_len is greater than 255, a JUMBO packet will be generated.
+ *  Generates an MSP V1 packet with the given parameter data and sends
+ *  it to the serial port. If the given payload_len is greater than 254,
+ *  a JUMBO packet will be generated.
  *
  */
 int send_V1(mspdev_t* mdev, uint8_t cmd, uint8_t* payload, uint16_t payload_len) {
@@ -52,7 +53,7 @@ int send_V1(mspdev_t* mdev, uint8_t cmd, uint8_t* payload, uint16_t payload_len)
     *(pBuf++) = 'M';
     *(pBuf++) = '<';
 
-    if (payload_len > 255)      {*(pBuf++) = 255;}
+    if (payload_len > 254)      {*(pBuf++) = 255;}
     else                        {*(pBuf++) = payload_len;}
 
     *pBuf = cmd;
@@ -66,7 +67,7 @@ int send_V1(mspdev_t* mdev, uint8_t cmd, uint8_t* payload, uint16_t payload_len)
     // in the first two bytes after the Command byte.
     // There is ambiguity in whether the length should include the two length bytes or not,
     // but based on the way the protocol description is written, I'll assume not.
-    if (payload_len > 255) {
+    if (payload_len > 254) {
         payload_len_le.value = htole16(payload_len);
         ret = msplink_write(mdev, payload_len_le.bytes, 2);
         if (ret<0) {return ret;}
@@ -87,20 +88,16 @@ int send_V1(mspdev_t* mdev, uint8_t cmd, uint8_t* payload, uint16_t payload_len)
 }
 
 
-
-// Send the given msp V2 packet with given flag, command, and payload
-// if 0 is returned, response contains the validated returned packet data
-
 /**
- *  MSP V1 packet sender
+ *  MSP V2 packet sender
  *
- *  @param mdev     [in]    an MSP device pointer
- *  @param flag     [in]    packet flag value
- *  @param cmd      [in]    an MSP command number
- *  @param payload  [in]    the command payload data
- *  @param payload_len [in] lenght of the command payload data
+ *  @param mdev        [in]    an MSP device pointer
+ *  @param flag        [in]    packet flag value
+ *  @param cmd         [in]    an MSP command number
+ *  @param payload     [in]    the command payload data
+ *  @param payload_len [in] length of the command payload data
  *
- *  Generates an MSP V2 packet with the given parameter data.
+ *  Generates an MSP V2 packet with the given parameter data and sends it to the serial port.
  *
  */
 int send_V2(mspdev_t* mdev, uint8_t flag, uint16_t cmd, uint8_t* payload, uint16_t payload_len) {
